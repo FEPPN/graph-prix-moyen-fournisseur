@@ -1,11 +1,17 @@
-// 1. Détection automatique du fournisseur via l'URL
-const nomPage = window.location.pathname.split("/").pop();
-let fournisseurAFiltrer = nomPage.replace(".html", "").toLowerCase();
+// 1. Détection sécurisée du nom du fournisseur via l'URL
+let fournisseurAFiltrer = "edf"; // Fournisseur par défaut (sécurité)
 
-if (fournisseurAFiltrer === "" || fournisseurAFiltrer === "index") {
-    fournisseurAFiltrer = "edf"; 
+if (window && window.location && window.location.pathname) {
+    const nomPage = window.location.pathname.split("/").pop();
+    if (nomPage && nomPage.includes(".html")) {
+        fournisseurAFiltrer = nomPage.replace(".html", "").toLowerCase().trim();
+    }
 }
 
+// Optionnel : Si tu veux forcer un fournisseur pendant que tu fais tes tests sur index.html :
+if (fournisseurAFiltrer === "index" || fournisseurAFiltrer === "") {
+    fournisseurAFiltrer = "edf"; 
+}
 // 2. Récupération des données
 fetch('data.json')
     .then(response => response.json())
