@@ -75,8 +75,9 @@ fetch('data.json')
                     intersect: false
                 },
                 plugins: {
+                    // --- SUPPRESSION TOTALE ET STRICTE DU TITRE DE CHART.JS ---
                     title: {
-                        display: false              // Désactivé ici car géré proprement dans le HTML désormais
+                        display: false
                     },
                     legend: { display: false },
                     tooltip: {
