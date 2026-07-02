@@ -19,7 +19,7 @@ fetch('data.json')
         // Tri chronologique
         data.sort((a, b) => new Date(a.scraping_month) - new Date(b.scraping_month));
 
-        // Filtrage
+        // Filtrage pour le fournisseur de la page
         const donneesFiltrees = data.filter(item => 
             item.provider_name.toLowerCase().replace(/\s/g, "") === fournisseurAFiltrer
         );
@@ -31,7 +31,13 @@ fetch('data.json')
 
         const nomOfficielFournisseur = donneesFiltrees[0].provider_name;
 
-        // --- ENTIÈREMENT SÉCURISÉ : AXE X AVEC ANNÉE SUR 4 CHIFFRES (MM/AAAA) ---
+        // Mise à jour dynamique du titre principal présent dans le fichier HTML
+        const elementTitre = document.getElementById('titreGraphique');
+        if (elementTitre) {
+            elementTitre.textContent = `Évolution des prix - ${nomOfficielFournisseur}`;
+        }
+
+        // Extraction des dates au format MM/AAAA (Ex: 06/2026)
         const labelsX = donneesFiltrees.map(item => {
             const d = new Date(item.scraping_month);
             return String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getFullYear());
@@ -53,7 +59,7 @@ fetch('data.json')
                     backgroundColor: '#f0f2ff',     // Zone remplie douce
                     borderWidth: 2.5,
                     fill: true,
-                    tension: 0.4,                   // Courbe fluide
+                    tension: 0.4,                   // Courbe fluide (spline)
                     pointRadius: 0,                 // Pas de points par défaut
                     pointHoverRadius: 6,            // Point au survol
                     pointHoverBackgroundColor: '#4d5dfb',
@@ -70,11 +76,7 @@ fetch('data.json')
                 },
                 plugins: {
                     title: {
-                        display: true,
-                        text: `Évolution des prix - ${nomOfficielFournisseur}`,
-                        font: { size: 18, weight: 'bold', family: 'Arial' },
-                        color: '#2c3e50',
-                        padding: { bottom: 10 }
+                        display: false              // Désactivé ici car géré proprement dans le HTML désormais
                     },
                     legend: { display: false },
                     tooltip: {
