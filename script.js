@@ -16,7 +16,7 @@ if (fournisseurAFiltrer === "index" || fournisseurAFiltrer === "") {
 fetch('data.json')
     .then(response => response.json())
     .then(data => {
-        // Tri chronologique strict
+        // Tri chronologique
         data.sort((a, b) => new Date(a.scraping_month) - new Date(b.scraping_month));
 
         // Filtrage
@@ -31,10 +31,10 @@ fetch('data.json')
 
         const nomOfficielFournisseur = donneesFiltrees[0].provider_name;
 
-        // Extraction des dates (Axe X : MM/AA)
+        // --- ENTIÈREMENT SÉCURISÉ : AXE X AVEC ANNÉE SUR 4 CHIFFRES (MM/AAAA) ---
         const labelsX = donneesFiltrees.map(item => {
             const d = new Date(item.scraping_month);
-            return String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getFullYear()).slice(-2);
+            return String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getFullYear());
         });
         
         const prixY = donneesFiltrees.map(item => item.prix_moyen_kwh_base);
@@ -49,11 +49,11 @@ fetch('data.json')
                 datasets: [{
                     label: 'Prix moyen kWh Base',
                     data: prixY,
-                    borderColor: '#4d5dfb',         // Bleu roi
+                    borderColor: '#4d5dfb',         // Bleu roi papernest
                     backgroundColor: '#f0f2ff',     // Zone remplie douce
                     borderWidth: 2.5,
                     fill: true,
-                    tension: 0.4,                   // Courbe spline fluide
+                    tension: 0.4,                   // Courbe fluide
                     pointRadius: 0,                 // Pas de points par défaut
                     pointHoverRadius: 6,            // Point au survol
                     pointHoverBackgroundColor: '#4d5dfb',
@@ -64,10 +64,9 @@ fetch('data.json')
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                // Gestion de l'interaction pour forcer l'affichage de la boîte au survol
-                interaction: {
+                hover: {
                     mode: 'index',
-                    intersect: false,
+                    intersect: false
                 },
                 plugins: {
                     title: {
@@ -78,20 +77,20 @@ fetch('data.json')
                         padding: { bottom: 10 }
                     },
                     legend: { display: false },
-                    // Configuration stricte de la boîte de survol (Tooltip)
                     tooltip: {
-                        enabled: true,              // Force l'activation
-                        backgroundColor: 'white',
+                        enabled: true,
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
                         titleColor: '#2c3e50',
                         bodyColor: '#4d5dfb',
                         borderColor: '#d7dbe9',
                         borderWidth: 1,
-                        padding: 10,
                         displayColors: false,
+                        padding: 10,
                         callbacks: {
                             label: function(context) {
-                                // Garde 4 décimales dans la bulle pour la précision au survol
-                                return `▢ ${context.parsed.y.toFixed(4)} € / kWh TTC`;
+                                return '▢ ' + Number(context.parsed.y).toFixed(4) + ' € / kWh TTC';
                             }
                         }
                     }
@@ -102,9 +101,8 @@ fetch('data.json')
                         ticks: {
                             color: '#7f8c8d',
                             font: { family: 'Arial', size: 12 },
-                            // --- MODIFICATION ICI : PASSAGE À 2 DÉCIMALES SUR L'AXE ---
                             callback: function(value) {
-                                return value.toFixed(2) + ' € / kWh'; 
+                                return Number(value).toFixed(2) + ' € / kWh'; 
                             }
                         }
                     },
