@@ -1,95 +1,105 @@
-// 1. On détecte automatiquement le nom du fournisseur grâce au nom de la page HTML
+// 1. Détection automatique du fournisseur via l'URL
 const nomPage = window.location.pathname.split("/").pop();
 let fournisseurAFiltrer = nomPage.replace(".html", "").toLowerCase();
 
-// Fournisseur par défaut si on est sur index.html ou la racine
 if (fournisseurAFiltrer === "" || fournisseurAFiltrer === "index") {
     fournisseurAFiltrer = "edf"; 
 }
 
-// 2. Récupération et filtrage des données
+// 2. Récupération des données
 fetch('data.json')
     .then(response => response.json())
     .then(data => {
-        // Tri par date
+        // Tri chronologique strict
         data.sort((a, b) => new Date(a.scraping_month) - new Date(b.scraping_month));
 
-        // Filtrage pour le fournisseur de la page
+        // Filtrage
         const donneesFiltrees = data.filter(item => 
             item.provider_name.toLowerCase().replace(/\s/g, "") === fournisseurAFiltrer
         );
 
         if (donneesFiltrees.length === 0) {
-            console.error(`Aucune donnée trouvée pour le fournisseur : ${fournisseurAFiltrer}`);
+            console.error(`Aucune donnée trouvée pour : ${fournisseurAFiltrer}`);
             return;
         }
 
         const nomOfficielFournisseur = donneesFiltrees[0].provider_name;
 
-        // Extraction et formatage des dates pour l'axe X (ex: "06/2026")
-        const mois = donneesFiltrees.map(item => {
+        // Extraction des données (Axe X : MM/AA comme demandé dans le python)
+        const labelsX = donneesFiltrees.map(item => {
             const d = new Date(item.scraping_month);
-            return String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+            return String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getFullYear()).slice(-2);
         });
         
-        const prix = donneesFiltrees.map(item => item.prix_moyen_kwh_base);
+        const prixY = donneesFiltrees.map(item => item.prix_moyen_kwh_base);
 
-        // 3. Dessin du graphique avec le style ADN papernest
+        // 3. Dessin du graphique (Copie conforme de la configuration Python)
         const ctx = document.getElementById('monGraphique').getContext('2d');
         
-        // Création d'un joli dégradé de haut en bas sous la courbe
-        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(15, 134, 254, 0.25)'); // Bleu papernest transparent en haut
-        gradient.addColorStop(1, 'rgba(15, 134, 254, 0.00)'); // Totalement invisible en bas
-
         new Chart(ctx, {
             type: 'line',
             data: {
-                labels: mois,
+                labels: labelsX,
                 datasets: [{
-                    label: `Prix moyen kWh Base`,
-                    data: prix,
-                    // --- STYLE VISUEL PAPERNEST ---
-                    borderColor: '#0f86fe',      // Le bleu officiel papernest
-                    backgroundColor: gradient,   // Application du dégradé sous la courbe
-                    borderWidth: 3,              // Épaisseur de la ligne
-                    fill: true,                  // Activer le remplissage sous la courbe
-                    tension: 0.4,                // Rend la courbe parfaitement lisse et arrondie
-                    pointRadius: 0,              // Supprime les petits points sur la ligne pour un effet épuré
-                    pointHoverRadius: 6,         // Le point réapparaît uniquement quand on passe la souris dessus
-                    pointHoverBackgroundColor: '#0f86fe'
+                    label: 'Prix moyen kWh Base',
+                    data: prixY,
+                    // Configuration des couleurs issues du fichier Python
+                    borderColor: '#4d5dfb',         // Bleu roi dynamique
+                    backgroundColor: '#f0f2ff',     // Zone bleutée douce
+                    borderWidth: 2.5,               // Épaisseur de ligne du Python
+                    fill: true,
+                    tension: 0.4,                   // Courbe fluide (spline)
+                    pointRadius: 0,                 // Pas de points visibles par défaut
+                    pointHoverRadius: 6,            // Le point réapparaît au survol
+                    pointHoverBackgroundColor: '#4d5dfb',
+                    pointHoverBorderColor: '#white',
+                    pointHoverBorderWidth: 2
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: false, // Permet de forcer la hauteur définie dans le HTML
                 plugins: {
                     title: {
                         display: true,
                         text: `Évolution des prix - ${nomOfficielFournisseur}`,
-                        font: { size: 18, weight: 'bold', family: 'sans-serif' },
-                        padding: { bottom: 20 },
-                        color: '#1a1a1a'
+                        font: { size: 18, weight: 'bold', family: 'Arial' },
+                        color: '#2c3e50',
+                        padding: { bottom: 10 }
                     },
-                    legend: { display: false } // Masque la légende inutile puisqu'il n'y a qu'un fournisseur
+                    legend: { display: false }, // Masquée comme dans le Python
+                    // Configuration de l'infobulle (comme l'hovertemplate du Python)
+                    tooltip: {
+                        backgroundColor: 'white',
+                        titleColor: '#2c3e50',
+                        bodyColor: '#4d5dfb',
+                        borderColor: '#d7dbe9',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: false, // Supprime le petit carré de couleur par défaut
+                        callbacks: {
+                            label: function(context) {
+                                return `▢ ${context.parsed.y.toFixed(4)} € / kWh Base`;
+                            }
+                        }
+                    }
                 },
                 scales: {
                     y: {
-                        grid: { color: '#eef2f5' }, // Grille très discrète en arrière-plan
+                        grid: { color: '#f5f5f5' }, // Gris ultra-léger pour les lignes de repère
                         ticks: {
-                            color: '#7a8b99',
-                            font: { family: 'sans-serif' },
-                            // --- PIÈCE REPRISE DE L'EXEMPLE : AJOUT DU SIGLE € ---
+                            color: '#7f8c8d',
+                            font: { family: 'Arial', size: 12 },
                             callback: function(value) {
-                                return value.toFixed(4) + ' €'; // Affiche ex: "0.1813 €"
+                                return value.toFixed(4) + ' € / kWh'; // Format Y-Axis du Python
                             }
                         }
                     },
                     x: {
-                        grid: { display: false }, // Supprime les lignes verticales pour alléger le graph
+                        grid: { color: '#f5f5f5' },
                         ticks: {
-                            color: '#7a8b99',
-                            font: { family: 'sans-serif' }
+                            color: '#7f8c8d',
+                            font: { family: 'Arial', size: 12 }
                         }
                     }
                 }
