@@ -16,7 +16,7 @@ if (fournisseurAFiltrer === "index" || fournisseurAFiltrer === "") {
 fetch('data.json')
     .then(response => response.json())
     .then(data => {
-        // Tri chronologique
+        // Tri chronologique strict sur les dates pures du JSON
         data.sort((a, b) => new Date(a.scraping_month) - new Date(b.scraping_month));
 
         // Filtrage pour le fournisseur de la page
@@ -31,21 +31,23 @@ fetch('data.json')
 
         const nomOfficielFournisseur = donneesFiltrees[0].provider_name;
 
-        // Mise à jour dynamique du titre principal présent dans le fichier HTML
+        // Mise à jour dynamique du titre présent dans le fichier HTML
         const elementTitre = document.getElementById('titreGraphique');
         if (elementTitre) {
             elementTitre.textContent = `Évolution des prix - ${nomOfficielFournisseur}`;
         }
 
-        // Extraction des dates au format MM/AAAA (Ex: 06/2026)
+        // Extraction et conversion des dates au format MM/AAAA APRÈS le tri
         const labelsX = donneesFiltrees.map(item => {
             const d = new Date(item.scraping_month);
-            return String(d.getMonth() + 1).padStart(2, '0') + '/' + String(d.getFullYear());
+            const mois = String(d.getMonth() + 1).padStart(2, '0');
+            const annee = d.getFullYear();
+            return `${mois}/${annee}`;
         });
         
         const prixY = donneesFiltrees.map(item => item.prix_moyen_kwh_base);
 
-        // 3. Dessin du graphique
+        // 3. Dessin du graphique avec Chart.js
         const ctx = document.getElementById('monGraphique').getContext('2d');
         
         new Chart(ctx, {
@@ -55,12 +57,12 @@ fetch('data.json')
                 datasets: [{
                     label: 'Prix moyen kWh Base',
                     data: prixY,
-                    borderColor: '#4d5dfb',         // Bleu roi papernest
+                    borderColor: '#4d5dfb',         // Bleu roi
                     backgroundColor: '#f0f2ff',     // Zone remplie douce
                     borderWidth: 2.5,
                     fill: true,
                     tension: 0.4,                   // Courbe fluide (spline)
-                    pointRadius: 0,                 // Pas de points par défaut
+                    pointRadius: 0,                 // Pas de points visibles par défaut
                     pointHoverRadius: 6,            // Point au survol
                     pointHoverBackgroundColor: '#4d5dfb',
                     pointHoverBorderColor: 'white',
@@ -75,9 +77,8 @@ fetch('data.json')
                     intersect: false
                 },
                 plugins: {
-                    // --- SUPPRESSION TOTALE ET STRICTE DU TITRE DE CHART.JS ---
                     title: {
-                        display: false
+                        display: false              // Masquage strict du titre interne (géré par le HTML)
                     },
                     legend: { display: false },
                     tooltip: {
@@ -105,7 +106,7 @@ fetch('data.json')
                             color: '#7f8c8d',
                             font: { family: 'Arial', size: 12 },
                             callback: function(value) {
-                                return Number(value).toFixed(2) + ' € / kWh'; 
+                                return Number(value).toFixed(2) + ' € / kWh'; // 2 décimales sur l'axe
                             }
                         }
                     },
@@ -119,4 +120,5 @@ fetch('data.json')
                 }
             }
         });
-    });
+    })
+    .catch(err => console.error("Erreur lors du chargement ou du dessin :", err));
