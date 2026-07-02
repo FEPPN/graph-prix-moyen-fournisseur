@@ -57,13 +57,13 @@ fetch('data.json')
                 datasets: [{
                     label: 'Prix moyen kWh Base',
                     data: prixY,
-                    borderColor: '#4d5dfb',         // Bleu roi papernest
-                    backgroundColor: '#f0f2ff',     // Zone remplie douce
+                    borderColor: '#4d5dfb',
+                    backgroundColor: '#f0f2ff',
                     borderWidth: 2.5,
                     fill: true,
-                    tension: 0.4,                   // Courbe fluide (spline)
-                    pointRadius: 0,                 // Pas de points visibles par défaut
-                    pointHoverRadius: 6,            // Point au survol
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
                     pointHoverBackgroundColor: '#4d5dfb',
                     pointHoverBorderColor: 'white',
                     pointHoverBorderWidth: 2
@@ -78,7 +78,7 @@ fetch('data.json')
                 },
                 plugins: {
                     title: {
-                        display: false              // Masquage strict du titre interne
+                        display: false
                     },
                     legend: { display: false },
                     tooltip: {
@@ -102,8 +102,7 @@ fetch('data.json')
                 scales: {
                     y: {
                         grid: { color: '#f5f5f5' },
-                        // --- MODIFICATION ICI : ÉCHELLE PLUS MESURÉE ---
-                        grace: '20%', // Ajoute 20% de marge en haut/bas pour atténuer visuellement les variations
+                        grace: '20%',
                         ticks: {
                             color: '#7f8c8d',
                             font: { family: 'Arial', size: 12 },
