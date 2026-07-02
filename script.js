@@ -16,7 +16,7 @@ if (fournisseurAFiltrer === "index" || fournisseurAFiltrer === "") {
 fetch('data.json')
     .then(response => response.json())
     .then(data => {
-        // Tri chronologique strict sur les dates pures du JSON
+        // Tri chronologique strict sur les dates pures
         data.sort((a, b) => new Date(a.scraping_month) - new Date(b.scraping_month));
 
         // Filtrage pour le fournisseur de la page
@@ -31,13 +31,13 @@ fetch('data.json')
 
         const nomOfficielFournisseur = donneesFiltrees[0].provider_name;
 
-        // Mise à jour dynamique du titre présent dans le fichier HTML
+        // Mise à jour dynamique du titre HTML
         const elementTitre = document.getElementById('titreGraphique');
         if (elementTitre) {
             elementTitre.textContent = `Évolution des prix - ${nomOfficielFournisseur}`;
         }
 
-        // Extraction et conversion des dates au format MM/AAAA APRÈS le tri
+        // Extraction et conversion des dates (MM/AAAA)
         const labelsX = donneesFiltrees.map(item => {
             const d = new Date(item.scraping_month);
             const mois = String(d.getMonth() + 1).padStart(2, '0');
@@ -57,7 +57,7 @@ fetch('data.json')
                 datasets: [{
                     label: 'Prix moyen kWh Base',
                     data: prixY,
-                    borderColor: '#4d5dfb',         // Bleu roi
+                    borderColor: '#4d5dfb',         // Bleu roi papernest
                     backgroundColor: '#f0f2ff',     // Zone remplie douce
                     borderWidth: 2.5,
                     fill: true,
@@ -78,7 +78,7 @@ fetch('data.json')
                 },
                 plugins: {
                     title: {
-                        display: false              // Masquage strict du titre interne (géré par le HTML)
+                        display: false              // Masquage strict du titre interne
                     },
                     legend: { display: false },
                     tooltip: {
@@ -102,11 +102,13 @@ fetch('data.json')
                 scales: {
                     y: {
                         grid: { color: '#f5f5f5' },
+                        // --- MODIFICATION ICI : ÉCHELLE PLUS MESURÉE ---
+                        grace: '20%', // Ajoute 20% de marge en haut/bas pour atténuer visuellement les variations
                         ticks: {
                             color: '#7f8c8d',
                             font: { family: 'Arial', size: 12 },
                             callback: function(value) {
-                                return Number(value).toFixed(2) + ' € / kWh'; // 2 décimales sur l'axe
+                                return Number(value).toFixed(2) + ' € / kWh'; 
                             }
                         }
                     },
@@ -121,4 +123,4 @@ fetch('data.json')
             }
         });
     })
-    .catch(err => console.error("Erreur lors du chargement ou du dessin :", err));
+    .catch(err => console.error("Erreur :", err));
