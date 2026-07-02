@@ -1,9 +1,8 @@
 // 1. On détecte automatiquement le nom du fournisseur grâce au nom de la page HTML
-// Exemple : si la page s'appelle "edf.html", le script comprend qu'il faut filtrer sur "edf"
 const nomPage = window.location.pathname.split("/").pop();
 let fournisseurAFiltrer = nomPage.replace(".html", "").toLowerCase();
 
-// Cas particulier : si on arrive sur la racine ou index.html, on peut mettre un fournisseur par défaut (ex: edf)
+// Fournisseur par défaut si on est sur index.html ou la racine
 if (fournisseurAFiltrer === "" || fournisseurAFiltrer === "index") {
     fournisseurAFiltrer = "edf"; 
 }
@@ -12,55 +11,87 @@ if (fournisseurAFiltrer === "" || fournisseurAFiltrer === "index") {
 fetch('data.json')
     .then(response => response.json())
     .then(data => {
-        // Tri par date pour avoir une jolie courbe chronologique
+        // Tri par date
         data.sort((a, b) => new Date(a.scraping_month) - new Date(b.scraping_month));
 
-        // On filtre le gros JSON pour ne garder QUE le fournisseur de la page
-        // (On utilise .toLowerCase() pour éviter les erreurs de majuscules/minuscules)
+        // Filtrage pour le fournisseur de la page
         const donneesFiltrees = data.filter(item => 
             item.provider_name.toLowerCase().replace(/\s/g, "") === fournisseurAFiltrer
         );
 
-        // Si on ne trouve pas le fournisseur, on affiche une alerte dans la console
         if (donneesFiltrees.length === 0) {
             console.error(`Aucune donnée trouvée pour le fournisseur : ${fournisseurAFiltrer}`);
             return;
         }
 
-        // On récupère le vrai nom officiel (avec les majuscules d'origine) pour le titre
         const nomOfficielFournisseur = donneesFiltrees[0].provider_name;
 
-        // Extraction des axes X (mois) et Y (prix)
-        const mois = donneesFiltrees.map(item => item.scraping_month);
+        // Extraction et formatage des dates pour l'axe X (ex: "06/2026")
+        const mois = donneesFiltrees.map(item => {
+            const d = new Date(item.scraping_month);
+            return String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+        });
+        
         const prix = donneesFiltrees.map(item => item.prix_moyen_kwh_base);
 
-        // 3. Dessin du graphique unique
+        // 3. Dessin du graphique avec le style ADN papernest
         const ctx = document.getElementById('monGraphique').getContext('2d');
+        
+        // Création d'un joli dégradé de haut en bas sous la courbe
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(15, 134, 254, 0.25)'); // Bleu papernest transparent en haut
+        gradient.addColorStop(1, 'rgba(15, 134, 254, 0.00)'); // Totalement invisible en bas
+
         new Chart(ctx, {
             type: 'line',
             data: {
                 labels: mois,
                 datasets: [{
-                    label: `Prix moyen kWh Base (en €)`,
+                    label: `Prix moyen kWh Base`,
                     data: prix,
-                    borderColor: '#3e95cd',
-                    backgroundColor: 'rgba(62, 149, 205, 0.1)',
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.1
+                    // --- STYLE VISUEL PAPERNEST ---
+                    borderColor: '#0f86fe',      // Le bleu officiel papernest
+                    backgroundColor: gradient,   // Application du dégradé sous la courbe
+                    borderWidth: 3,              // Épaisseur de la ligne
+                    fill: true,                  // Activer le remplissage sous la courbe
+                    tension: 0.4,                // Rend la courbe parfaitement lisse et arrondie
+                    pointRadius: 0,              // Supprime les petits points sur la ligne pour un effet épuré
+                    pointHoverRadius: 6,         // Le point réapparaît uniquement quand on passe la souris dessus
+                    pointHoverBackgroundColor: '#0f86fe'
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: {
                     title: {
                         display: true,
                         text: `Évolution des prix - ${nomOfficielFournisseur}`,
-                        font: { size: 18 }
-                    }
+                        font: { size: 18, weight: 'bold', family: 'sans-serif' },
+                        padding: { bottom: 20 },
+                        color: '#1a1a1a'
+                    },
+                    legend: { display: false } // Masque la légende inutile puisqu'il n'y a qu'un fournisseur
                 },
                 scales: {
-                    y: { beginAtZero: false }
+                    y: {
+                        grid: { color: '#eef2f5' }, // Grille très discrète en arrière-plan
+                        ticks: {
+                            color: '#7a8b99',
+                            font: { family: 'sans-serif' },
+                            // --- PIÈCE REPRISE DE L'EXEMPLE : AJOUT DU SIGLE € ---
+                            callback: function(value) {
+                                return value.toFixed(4) + ' €'; // Affiche ex: "0.1813 €"
+                            }
+                        }
+                    },
+                    x: {
+                        grid: { display: false }, // Supprime les lignes verticales pour alléger le graph
+                        ticks: {
+                            color: '#7a8b99',
+                            font: { family: 'sans-serif' }
+                        }
+                    }
                 }
             }
         });
