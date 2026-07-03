@@ -1,13 +1,15 @@
-// 1. Détection automatique du fournisseur via l'URL
+// 1. Détection automatique du fournisseur via l'URL (Version Ultra-Blindée)
 let fournisseurAFiltrer = "edf"; 
 
 if (window && window.location && window.location.pathname) {
     let nomPage = window.location.pathname.split("/").pop();
     if (nomPage && nomPage.includes(".html")) {
-        // On nettoie le nom de la page (ex: "plenitude")
+        // On enlève ".html" et on passe tout en minuscules et sans espaces
         fournisseurAFiltrer = nomPage.replace(".html", "").toLowerCase().trim();
-        // On enlève les accents éventuels du nom de la page
+        // On supprime les accents éventuels (ex: plénitude -> plenitude)
         fournisseurAFiltrer = fournisseurAFiltrer.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        // On supprime les tirets pour gérer Octopus (ex: octopus-energy -> octopusenergy)
+        fournisseurAFiltrer = fournisseurAFiltrer.replace(/-/g, ""); 
     }
 }
 
@@ -19,19 +21,18 @@ if (fournisseurAFiltrer === "index" || fournisseurAFiltrer === "") {
 fetch('data.json')
     .then(response => response.json())
     .then(data => {
-        // Tri chronologique strict sur les dates pures
+        // Tri chronologique strict sur les dates pures du JSON
         data.sort((a, b) => new Date(a.scraping_month) - new Date(b.scraping_month));
 
-        // --- NOUVEAU FILTRE BLINDÉ ANTI-ACCENTS ET ANTI-ESPACES ---
+        // Filtrage intelligent avec nettoyage complet du JSON
         let donneesFiltrees = data.filter(item => {
-            // Nettoyage extrême du nom dans ta base de données : 
-            // 1. Minuscules 2. Sans accents 3. Sans espaces
             const nomJsonPropre = item.provider_name
                 .toLowerCase()
                 .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-                .replace(/\s/g, "");
+                .replace(/\s/g, "")
+                .replace(/-/g, ""); // Sécurité supplémentaire si un tiret est dans le JSON
             
-            // Si la page contient "plenitude", on cherche juste si le nom JSON contient "plenitude"
+            // Cas particulier pour Plénitude France / Plénitude
             if (fournisseurAFiltrer.includes("plenitude")) {
                 return nomJsonPropre.includes("plenitude");
             }
@@ -39,7 +40,7 @@ fetch('data.json')
             return nomJsonPropre === fournisseurAFiltrer;
         });
 
-        // Fenêtre glissante : On ne garde que les 24 derniers mois
+        // Fenêtre glissante : On ne garde que les 24 derniers mois pour éviter l'écrasement
         donneesFiltrees = donneesFiltrees.slice(-24);
 
         if (donneesFiltrees.length === 0) {
@@ -47,7 +48,7 @@ fetch('data.json')
             return;
         }
 
-        // On récupère le vrai nom officiel (avec ses majuscules et accents) pour le titre
+        // On récupère le vrai nom officiel propre pour l'insérer dans le titre HTML
         const nomOfficielFournisseur = donneesFiltrees[0].provider_name;
 
         // Mise à jour dynamique du titre HTML
@@ -56,7 +57,7 @@ fetch('data.json')
             elementTitre.textContent = `Évolution des prix - ${nomOfficielFournisseur}`;
         }
 
-        // Extraction et conversion des dates (MM/AAAA)
+        // Extraction et conversion des dates (Format MM/AAAA sur 4 chiffres)
         const labelsX = donneesFiltrees.map(item => {
             const d = new Date(item.scraping_month);
             const mois = String(d.getMonth() + 1).padStart(2, '0');
@@ -76,13 +77,13 @@ fetch('data.json')
                 datasets: [{
                     label: 'Prix moyen kWh Base',
                     data: prixY,
-                    borderColor: '#4d5dfb',
-                    backgroundColor: '#f0f2ff',
+                    borderColor: '#4d5dfb',         // Bleu roi Papernest
+                    backgroundColor: '#f0f2ff',     // Zone remplie douce
                     borderWidth: 2.5,
                     fill: true,
-                    tension: 0.4,
-                    pointRadius: 0,
-                    pointHoverRadius: 6,
+                    tension: 0.4,                   // Courbe fluide lissée
+                    pointRadius: 0,                 // Pas de points par défaut
+                    pointHoverRadius: 6,            // Point qui s'active au survol
                     pointHoverBackgroundColor: '#4d5dfb',
                     pointHoverBorderColor: 'white',
                     pointHoverBorderWidth: 2
@@ -97,7 +98,7 @@ fetch('data.json')
                 },
                 plugins: {
                     title: {
-                        display: false
+                        display: false              // Masqué car géré au millimètre près par le HTML
                     },
                     legend: { display: false },
                     tooltip: {
@@ -121,8 +122,9 @@ fetch('data.json')
                 scales: {
                     y: {
                         grid: { color: '#f5f5f5' },
-                        min: 0.10, 
-                        max: 0.35,
+                        // Échelle stricte et harmonisée demandée
+                        min: 0.15, 
+                        max: 0.40,
                         ticks: {
                             color: '#7f8c8d',
                             font: { family: 'Arial', size: 12 },
@@ -142,4 +144,4 @@ fetch('data.json')
             }
         });
     })
-    .catch(err => console.error("Erreur :", err));
+    .catch(err => console.error("Erreur générale du script :", err));
