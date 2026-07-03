@@ -105,8 +105,8 @@ fetch('data.json')
                         // --- MODIFICATION DE L'ÉCHELLE ---
                         // Ces valeurs forcent le graphique à afficher au moins de 0.10 à 0.30
                         // Tu peux ajuster ces chiffres si tu veux "écraser" encore plus la courbe !
-                        suggestedMin: 0.10, 
-                        suggestedMax: 0.30,
+                        suggestedMin: 0.15, 
+                        suggestedMax: 0.40,
                         ticks: {
                             color: '#7f8c8d',
                             font: { family: 'Arial', size: 12 },
