@@ -102,7 +102,11 @@ fetch('data.json')
                 scales: {
                     y: {
                         grid: { color: '#f5f5f5' },
-                        grace: '20%',
+                        // --- MODIFICATION DE L'ÉCHELLE ---
+                        // Ces valeurs forcent le graphique à afficher au moins de 0.10 à 0.30
+                        // Tu peux ajuster ces chiffres si tu veux "écraser" encore plus la courbe !
+                        suggestedMin: 0.10, 
+                        suggestedMax: 0.30,
                         ticks: {
                             color: '#7f8c8d',
                             font: { family: 'Arial', size: 12 },
