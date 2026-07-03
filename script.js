@@ -20,9 +20,14 @@ fetch('data.json')
         data.sort((a, b) => new Date(a.scraping_month) - new Date(b.scraping_month));
 
         // Filtrage pour le fournisseur de la page
-        const donneesFiltrees = data.filter(item => 
+        let donneesFiltrees = data.filter(item => 
             item.provider_name.toLowerCase().replace(/\s/g, "") === fournisseurAFiltrer
         );
+
+        // --- MODIFICATION ICI : FENÊTRE GLISSANTE ---
+        // On ne garde que les 24 derniers mois (ce qui correspond à tes 2 ans actuels).
+        // Si tu veux afficher 12 mois ou 36 mois, il suffit de changer ce chiffre !
+        donneesFiltrees = donneesFiltrees.slice(-24);
 
         if (donneesFiltrees.length === 0) {
             console.error(`Aucune donnée trouvée pour : ${fournisseurAFiltrer}`);
@@ -102,11 +107,8 @@ fetch('data.json')
                 scales: {
                     y: {
                         grid: { color: '#f5f5f5' },
-                        // --- MODIFICATION DE L'ÉCHELLE ---
-                        // Ces valeurs forcent le graphique à afficher au moins de 0.10 à 0.30
-                        // Tu peux ajuster ces chiffres si tu veux "écraser" encore plus la courbe !
-                        suggestedMin: 0.15, 
-                        suggestedMax: 0.40,
+                        suggestedMin: 0.10, 
+                        suggestedMax: 0.30,
                         ticks: {
                             color: '#7f8c8d',
                             font: { family: 'Arial', size: 12 },
