@@ -121,8 +121,8 @@ fetch('data.json')
                 scales: {
                     y: {
                         grid: { color: '#f5f5f5' },
-                        min: 0.15, 
-                        max: 0.40,
+                        min: 0.10, 
+                        max: 0.35,
                         ticks: {
                             color: '#7f8c8d',
                             font: { family: 'Arial', size: 12 },
