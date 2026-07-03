@@ -19,18 +19,25 @@ fetch('data.json')
         // Tri chronologique strict sur les dates pures
         data.sort((a, b) => new Date(a.scraping_month) - new Date(b.scraping_month));
 
-        // Filtrage pour le fournisseur de la page
-        let donneesFiltrees = data.filter(item => 
-            item.provider_name.toLowerCase().replace(/\s/g, "") === fournisseurAFiltrer
-        );
+        // --- GESTION DES EXCEPTIONS DE NOMS DE FOURNISSEURS ---
+        // Ici, on fait correspondre le nom de la page HTML avec le vrai nom dans ton JSON BigQuery
+        let donneesFiltrees = data.filter(item => {
+            const nomJson = item.provider_name.toLowerCase().replace(/\s/g, "");
+            
+            // Si la page est plenitude.html, on accepte "plenitudefrance" ou "plenitude"
+            if (fournisseurAFiltrer === "plenitude") {
+                return nomJson === "plenitudefrance" || nomJson === "plenitude";
+            }
+            
+            // Par défaut, on fait la correspondance exacte habituelle
+            return nomJson === fournisseurAFiltrer;
+        });
 
-        // --- MODIFICATION ICI : FENÊTRE GLISSANTE ---
-        // On ne garde que les 24 derniers mois (ce qui correspond à tes 2 ans actuels).
-        // Si tu veux afficher 12 mois ou 36 mois, il suffit de changer ce chiffre !
+        // Fenêtre glissante : On ne garde que les 24 derniers mois
         donneesFiltrees = donneesFiltrees.slice(-24);
 
         if (donneesFiltrees.length === 0) {
-            console.error(`Aucune donnée trouvée pour : ${fournisseurAFiltrer}`);
+            console.error(`Aucune donnée trouvée pour le fournisseur : ${fournisseurAFiltrer}`);
             return;
         }
 
