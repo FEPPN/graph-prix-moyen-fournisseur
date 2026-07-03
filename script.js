@@ -6,9 +6,9 @@ if (window && window.location && window.location.pathname) {
     if (nomPage && nomPage.includes(".html")) {
         // On enlève ".html" et on passe tout en minuscules et sans espaces
         fournisseurAFiltrer = nomPage.replace(".html", "").toLowerCase().trim();
-        // On supprime les accents éventuels (ex: plénitude -> plenitude)
+        // On supprime les accents éventuels
         fournisseurAFiltrer = fournisseurAFiltrer.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        // On supprime les tirets pour gérer Octopus (ex: octopus-energy -> octopusenergy)
+        // On supprime les tirets pour gérer Octopus
         fournisseurAFiltrer = fournisseurAFiltrer.replace(/-/g, ""); 
     }
 }
@@ -30,7 +30,7 @@ fetch('data.json')
                 .toLowerCase()
                 .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
                 .replace(/\s/g, "")
-                .replace(/-/g, ""); // Sécurité supplémentaire si un tiret est dans le JSON
+                .replace(/-/g, ""); 
             
             // Cas particulier pour Plénitude France / Plénitude
             if (fournisseurAFiltrer.includes("plenitude")) {
@@ -40,7 +40,7 @@ fetch('data.json')
             return nomJsonPropre === fournisseurAFiltrer;
         });
 
-        // Fenêtre glissante : On ne garde que les 24 derniers mois pour éviter l'écrasement
+        // Fenêtre glissante : On ne garde que les 24 derniers mois
         donneesFiltrees = donneesFiltrees.slice(-24);
 
         if (donneesFiltrees.length === 0) {
@@ -48,7 +48,6 @@ fetch('data.json')
             return;
         }
 
-        // On récupère le vrai nom officiel propre pour l'insérer dans le titre HTML
         const nomOfficielFournisseur = donneesFiltrees[0].provider_name;
 
         // Mise à jour dynamique du titre HTML
@@ -57,7 +56,6 @@ fetch('data.json')
             elementTitre.textContent = `Évolution des prix - ${nomOfficielFournisseur}`;
         }
 
-        // Extraction et conversion des dates (Format MM/AAAA sur 4 chiffres)
         const labelsX = donneesFiltrees.map(item => {
             const d = new Date(item.scraping_month);
             const mois = String(d.getMonth() + 1).padStart(2, '0');
@@ -66,6 +64,13 @@ fetch('data.json')
         });
         
         const prixY = donneesFiltrees.map(item => item.prix_moyen_kwh_base);
+
+        // --- NOUVEAUTÉ : LE PLAFOND INTELLIGENT ---
+        // On cherche le prix le plus élevé de la période
+        const maxPrixActuel = Math.max(...prixY);
+        // Si le max dépasse 0.35 (ex: 0.90), on fixe le plafond à ce max + 0.05 de marge pour que ça respire.
+        // Sinon, on bloque rigoureusement l'échelle à 0.35.
+        const plafondY = maxPrixActuel > 0.35 ? maxPrixActuel + 0.05 : 0.35;
 
         // 3. Dessin du graphique avec Chart.js
         const ctx = document.getElementById('monGraphique').getContext('2d');
@@ -77,13 +82,13 @@ fetch('data.json')
                 datasets: [{
                     label: 'Prix moyen kWh Base',
                     data: prixY,
-                    borderColor: '#4d5dfb',         // Bleu roi Papernest
-                    backgroundColor: '#f0f2ff',     // Zone remplie douce
+                    borderColor: '#4d5dfb',
+                    backgroundColor: '#f0f2ff',
                     borderWidth: 2.5,
                     fill: true,
-                    tension: 0.4,                   // Courbe fluide lissée
-                    pointRadius: 0,                 // Pas de points par défaut
-                    pointHoverRadius: 6,            // Point qui s'active au survol
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
                     pointHoverBackgroundColor: '#4d5dfb',
                     pointHoverBorderColor: 'white',
                     pointHoverBorderWidth: 2
@@ -97,9 +102,7 @@ fetch('data.json')
                     intersect: false
                 },
                 plugins: {
-                    title: {
-                        display: false              // Masqué car géré au millimètre près par le HTML
-                    },
+                    title: { display: false },
                     legend: { display: false },
                     tooltip: {
                         enabled: true,
@@ -122,9 +125,8 @@ fetch('data.json')
                 scales: {
                     y: {
                         grid: { color: '#f5f5f5' },
-                        // Échelle stricte et harmonisée demandée
                         min: 0.10, 
-                        max: 0.35,
+                        max: plafondY, // On injecte notre plafond adaptatif ici !
                         ticks: {
                             color: '#7f8c8d',
                             font: { family: 'Arial', size: 12 },
