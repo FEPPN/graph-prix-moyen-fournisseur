@@ -2,9 +2,12 @@
 let fournisseurAFiltrer = "edf"; 
 
 if (window && window.location && window.location.pathname) {
-    const nomPage = window.location.pathname.split("/").pop();
+    let nomPage = window.location.pathname.split("/").pop();
     if (nomPage && nomPage.includes(".html")) {
+        // On nettoie le nom de la page (ex: "plenitude")
         fournisseurAFiltrer = nomPage.replace(".html", "").toLowerCase().trim();
+        // On enlève les accents éventuels du nom de la page
+        fournisseurAFiltrer = fournisseurAFiltrer.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     }
 }
 
@@ -19,18 +22,21 @@ fetch('data.json')
         // Tri chronologique strict sur les dates pures
         data.sort((a, b) => new Date(a.scraping_month) - new Date(b.scraping_month));
 
-        // --- GESTION DES EXCEPTIONS DE NOMS DE FOURNISSEURS ---
-        // Ici, on fait correspondre le nom de la page HTML avec le vrai nom dans ton JSON BigQuery
+        // --- NOUVEAU FILTRE BLINDÉ ANTI-ACCENTS ET ANTI-ESPACES ---
         let donneesFiltrees = data.filter(item => {
-            const nomJson = item.provider_name.toLowerCase().replace(/\s/g, "");
+            // Nettoyage extrême du nom dans ta base de données : 
+            // 1. Minuscules 2. Sans accents 3. Sans espaces
+            const nomJsonPropre = item.provider_name
+                .toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .replace(/\s/g, "");
             
-            // Si la page est plenitude.html, on accepte "plenitudefrance" ou "plenitude"
-            if (fournisseurAFiltrer === "plenitude") {
-                return nomJson === "plenitudefrance" || nomJson === "plenitude";
+            // Si la page contient "plenitude", on cherche juste si le nom JSON contient "plenitude"
+            if (fournisseurAFiltrer.includes("plenitude")) {
+                return nomJsonPropre.includes("plenitude");
             }
             
-            // Par défaut, on fait la correspondance exacte habituelle
-            return nomJson === fournisseurAFiltrer;
+            return nomJsonPropre === fournisseurAFiltrer;
         });
 
         // Fenêtre glissante : On ne garde que les 24 derniers mois
@@ -41,6 +47,7 @@ fetch('data.json')
             return;
         }
 
+        // On récupère le vrai nom officiel (avec ses majuscules et accents) pour le titre
         const nomOfficielFournisseur = donneesFiltrees[0].provider_name;
 
         // Mise à jour dynamique du titre HTML
@@ -114,8 +121,8 @@ fetch('data.json')
                 scales: {
                     y: {
                         grid: { color: '#f5f5f5' },
-                        suggestedMin: 0.10, 
-                        suggestedMax: 0.30,
+                        min: 0.15, 
+                        max: 0.40,
                         ticks: {
                             color: '#7f8c8d',
                             font: { family: 'Arial', size: 12 },
