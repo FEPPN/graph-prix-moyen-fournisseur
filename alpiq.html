@@ -1,22 +1,138 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Graphique Prix Fournisseur</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
-    <div style="width: 100%; max-width: 800px; margin: 20px auto; text-align: center; font-family: Arial, sans-serif;">
-        <h2 id="titreGraphique" style="font-size: 18px; font-weight: bold; color: #2c3e50; margin-bottom: 5px;">
-            Évolution des prix
-        </h2>
-        <p style="color: #7f8c8d; font-size: 14px; margin-top: 0px; margin-bottom: 15px;">
-            💡 Ce graphique est mis à jour automatiquement chaque 1er du mois
-        </p>
-        <div style="height: 350px;">
-            <canvas id="monGraphique"></canvas>
-        </div>
-    </div>
-    <script src="script.js"></script>
-</body>
-</html>
+// 1. Détection automatique du fournisseur via l'URL (Version SÉCURISÉE TEST)
+let fournisseurAFiltrer = "edf"; 
+
+if (window && window.location && window.location.pathname) {
+    let nomPage = window.location.pathname.split("/").pop();
+    if (nomPage && nomPage.includes(".html")) {
+        fournisseurAFiltrer = nomPage.replace(".html", "").toLowerCase().trim();
+        fournisseurAFiltrer = fournisseurAFiltrer.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        fournisseurAFiltrer = fournisseurAFiltrer.replace(/-/g, ""); 
+    }
+}
+
+// AJOUT ICI : Si le fichier s'appelle test.html, on force l'affichage d'EDF au lieu de bugger
+if (fournisseurAFiltrer === "index" || fournisseurAFiltrer === "" || fournisseurAFiltrer.includes("test")) {
+    fournisseurAFiltrer = "edf"; 
+}
+
+// 2. Récupération des données
+fetch('data.json')
+    .then(response => response.json())
+    .then(data => {
+        data.sort((a, b) => new Date(a.scraping_month) - new Date(b.scraping_month));
+
+        let donneesFiltrees = data.filter(item => {
+            const nomJsonPropre = item.provider_name
+                .toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .replace(/\s/g, "")
+                .replace(/-/g, ""); 
+            
+            if (fournisseurAFiltrer.includes("plenitude")) {
+                return nomJsonPropre.includes("plenitude");
+            }
+            
+            return nomJsonPropre === fournisseurAFiltrer;
+        });
+
+        donneesFiltrees = donneesFiltrees.slice(-24);
+
+        if (donneesFiltrees.length === 0) {
+            console.error(`Aucune donnée trouvée pour le fournisseur : ${fournisseurAFiltrer}`);
+            return;
+        }
+
+        const nomOfficielFournisseur = donneesFiltrees[0].provider_name;
+
+        const elementTitre = document.getElementById('titreGraphique');
+        if (elementTitre) {
+            elementTitre.textContent = `Évolution des prix - ${nomOfficielFournisseur}`;
+        }
+
+        const labelsX = donneesFiltrees.map(item => {
+            const d = new Date(item.scraping_month);
+            const mois = String(d.getMonth() + 1).padStart(2, '0');
+            const annee = d.getFullYear();
+            return `${mois}/${annee}`;
+        });
+        
+        const prixY = donneesFiltrees.map(item => item.prix_moyen_kwh_base);
+
+        const maxPrixActuel = Math.max(...prixY);
+        const plafondY = maxPrixActuel > 0.35 ? maxPrixActuel + 0.05 : 0.35;
+
+        // 3. Dessin du graphique
+        const ctx = document.getElementById('monGraphique').getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labelsX,
+                datasets: [{
+                    label: 'Prix moyen kWh Base',
+                    data: prixY,
+                    borderColor: '#4d5dfb',
+                    backgroundColor: '#f0f2ff',
+                    borderWidth: 2.5,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: '#4d5dfb',
+                    pointHoverBorderColor: 'white',
+                    pointHoverBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                hover: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    title: { display: false },
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        titleColor: '#2c3e50',
+                        bodyColor: '#4d5dfb',
+                        borderColor: '#d7dbe9',
+                        borderWidth: 1,
+                        displayColors: false,
+                        padding: 10,
+                        callbacks: {
+                            label: function(context) {
+                                return '▢ ' + Number(context.parsed.y).toFixed(4) + ' € / kWh TTC';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        grid: { color: '#f5f5f5' },
+                        min: 0.10, 
+                        max: plafondY,
+                        ticks: {
+                            color: '#7f8c8d',
+                            font: { family: 'Arial', size: 12 },
+                            callback: function(value) {
+                                return Number(value).toFixed(2) + ' € / kWh'; 
+                            }
+                        }
+                    },
+                    x: {
+                        grid: { color: '#f5f5f5' },
+                        ticks: {
+                            color: '#7f8c8d',
+                            font: { family: 'Arial', size: 12 }
+                        }
+                    }
+                }
+            }
+        });
+    })
+    .catch(err => console.error("Erreur générale du script :", err));
