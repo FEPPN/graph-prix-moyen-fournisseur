@@ -4,6 +4,67 @@
     <meta charset="UTF-8">
     <title>Graphique Prix Fournisseur</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Style pour la bulle d'information */
+        .wrapper-infobulle {
+            margin-top: 15px;
+            font-family: Arial, sans-serif;
+        }
+        .infobulle {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            color: #4d5dfb; /* Bleu Papernest */
+            font-size: 13px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .infobulle:hover {
+            color: #2c3e50;
+        }
+        .infobulle .texte-bulle {
+            visibility: hidden;
+            width: 320px;
+            background-color: #2c3e50;
+            color: #ffffff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 12px;
+            font-weight: normal;
+            line-height: 1.4;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            
+            /* Positionnement de la bulle juste au-dessus */
+            position: absolute;
+            z-index: 10;
+            bottom: 160%;
+            left: 50%;
+            transform: translateX(-50%);
+            
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        /* La petite flèche sous la bulle */
+        .infobulle .texte-bulle::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: #2c3e50 transparent transparent transparent;
+        }
+        /* Affichage au survol */
+        .infobulle:hover .texte-bulle {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
 </head>
 <body>
     <div style="width: 100%; max-width: 800px; margin: 20px auto; text-align: center; font-family: Arial, sans-serif;">
@@ -19,8 +80,18 @@
         <div style="height: 350px;">
             <canvas id="monGraphique"></canvas>
         </div>
+
+        <div class="wrapper-infobulle">
+            <div class="infobulle">
+                <span>Comprendre le calcul</span>
+                <span style="background: #eef0ff; width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 11px;">?</span>
+                <span class="texte-bulle">
+                    <strong>Méthodologie :</strong> Les données sont récupérées automatiquement le 1er de chaque mois via un script de scraping sur les grilles tarifaires officielles des fournisseurs. Le prix indiqué correspond au tarif moyen du kWh de l'offre de Base (TTC), calculé sur une consommation de référence.
+                </span>
+            </div>
+        </div>
+
     </div>
     <script src="script.js"></script>
 </body>
 </html>
-
